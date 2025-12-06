@@ -206,7 +206,7 @@ echo "📝 配置文件: /data/stacks/caddy/Caddyfile"
 echo "🔍 测试命令: curl http://localhost/health"
 ```
 
-### Caddy的一键脚本
+### 2.2.1 Caddy的一键脚本
 ```bash
 # 一键部署 Caddy 管理快捷命令
 cat > /usr/local/bin/caddy << 'EOF'
@@ -280,18 +280,29 @@ stop_caddy() {
 edit_config() {
     echo -e "${YELLOW}打开配置文件编辑器...${NC}"
     echo -e "${BLUE}配置文件路径: $CADDYFILE${NC}"
+    echo ""
+    echo -e "${YELLOW}提示：${NC}"
     
-    # 使用用户默认编辑器，如果没有则依次尝试 vim, vi, nano
-    if [ -n "$EDITOR" ]; then
-        $EDITOR $CADDYFILE
+    # 优先使用 nano (最简单)，其次 vim, vi
+    if command -v nano &> /dev/null; then
+        echo -e "${GREEN}使用 nano 编辑器 (Ctrl+O 保存, Ctrl+X 退出)${NC}"
+        sleep 1
+        nano $CADDYFILE
     elif command -v vim &> /dev/null; then
+        echo -e "${GREEN}使用 vim 编辑器${NC}"
+        echo -e "${BLUE}基本操作: 按 i 进入编辑模式, 编辑完成后按 ESC, 然后输入 :wq 保存退出${NC}"
+        sleep 2
         vim $CADDYFILE
     elif command -v vi &> /dev/null; then
+        echo -e "${GREEN}使用 vi 编辑器${NC}"
+        echo -e "${BLUE}基本操作: 按 i 进入编辑模式, 编辑完成后按 ESC, 然后输入 :wq 保存退出${NC}"
+        sleep 2
         vi $CADDYFILE
-    elif command -v nano &> /dev/null; then
-        nano $CADDYFILE
+    elif [ -n "$EDITOR" ]; then
+        $EDITOR $CADDYFILE
     else
         echo -e "${RED}❌ 未找到可用的编辑器${NC}"
+        echo -e "${YELLOW}请先安装编辑器: apt install nano 或 yum install nano${NC}"
         return 1
     fi
     
