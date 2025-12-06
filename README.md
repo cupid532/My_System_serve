@@ -98,7 +98,7 @@ Dockge 是基于文件的管理工具，完美契合本方案。
 <!-- end list -->
 ```bash
 nano docker-compose.yml
-
+```
 ```yaml
 services:
   dockge:
