@@ -8,7 +8,7 @@ DISK="/dev/$DISK_NAME"
 
 # 确认一下
 echo "即将格式化: $DISK"
-read -p "确认吗？输入 YES 继续: " confirm
+read -p "确认吗？输入 y 继续: " confirm
 
 if [ "$confirm" = "YES" ]; then
     sudo mkfs.ext4 -F $DISK
