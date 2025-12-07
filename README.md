@@ -43,6 +43,31 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
+# 检查并挂载数据盘
+echo "💾 检查并挂载数据盘..."
+UNMOUNTED_DISK=$(lsblk -ndo NAME,TYPE,MOUNTPOINT | awk '$2=="disk" && $3=="" {print "/dev/"$1}' | head -1)
+
+if [ -n "$UNMOUNTED_DISK" ]; then
+    echo "发现未挂载磁盘: $UNMOUNTED_DISK"
+    
+    if ! blkid "$UNMOUNTED_DISK" | grep -q TYPE; then
+        echo "正在格式化..."
+        mkfs.ext4 -F "$UNMOUNTED_DISK"
+    fi
+    
+    mkdir -p /data
+    mount "$UNMOUNTED_DISK" /data
+    
+    UUID=$(blkid -s UUID -o value "$UNMOUNTED_DISK")
+    if ! grep -q "$UUID" /etc/fstab; then
+        echo "UUID=$UUID /data ext4 defaults,nofail 0 2" >> /etc/fstab
+    fi
+    
+    echo "✓ 数据盘已挂载到 /data"
+else
+    echo "✓ 未发现需要挂载的数据盘"
+fi
+
 # 安装 Docker
 echo "📦 正在安装 Docker..."
 if ! command -v docker &> /dev/null; then
@@ -86,19 +111,7 @@ echo "📊 系统信息："
 echo "- Docker 版本: $(docker --version)"
 echo "- 数据目录: /data"
 echo "- 可用空间: $(df -h /data | tail -1 | awk '{print $4}')"
-```
 
-### 验证安装
-
-```bash
-# 检查 Docker 状态
-systemctl status docker
-
-# 检查网络
-docker network ls | grep proxynet
-
-# 检查目录权限
-ls -lah /data
 ```
 
 ---
