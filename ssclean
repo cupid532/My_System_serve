@@ -1,0 +1,61 @@
+# System Security Cleanup 系统安全清理脚本（非 DD）
+#!/bin/bash
+
+# 确保脚本以 root 运行
+if [ "$EUID" -ne 0 ]; then
+  echo "请使用 root 权限运行此脚本 (sudo ./clean_system.sh)"
+  exit 1
+fi
+
+echo "======================================================="
+echo "   Linux 系统深度清理脚本 (Debian 12 / Ubuntu)"
+echo "   ⚠️  警告：将清理 Docker、日志、缓存及未使用的包"
+echo "   5秒后开始..."
+echo "======================================================="
+sleep 5
+
+# 1. 清理 apt 缓存和未使用的依赖
+echo "[+] 正在清理 APT 缓存和孤立依赖..."
+apt-get update -y > /dev/null
+# 自动移除未被使用的依赖包（包括配置文件）
+apt-get autoremove --purge -y
+# 清理下载的包缓存
+apt-get clean
+apt-get autoclean
+
+# 2. 尝试移除常见的大型软件环境 (可选，根据需要保留)
+# 如果你是测试环境，可能想把 Docker 也卸载了
+if command -v docker &> /dev/null; then
+    echo "[+] 检测到 Docker，正在卸载..."
+    apt-get purge -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin docker-ce-rootless-extras
+    rm -rf /var/lib/docker
+    rm -rf /var/lib/containerd
+fi
+
+# 3. 清理系统日志 (保留目录结构，清空文件内容)
+echo "[+] 正在清理系统日志 (/var/log)..."
+find /var/log -type f -name "*.log" -exec truncate -s 0 {} \;
+find /var/log -type f -name "*.gz" -delete
+find /var/log -type f -name "*.1" -delete
+# 清理 systemd 日志
+journalctl --vacuum-time=1s
+
+# 4. 清理临时文件
+echo "[+] 正在清理临时文件 (/tmp)..."
+rm -rf /tmp/*
+rm -rf /var/tmp/*
+
+# 5. 清理历史命令记录
+echo "[+] 清理 Bash 历史记录..."
+history -c
+rm -f ~/.bash_history
+rm -f /home/*/.bash_history
+
+# 6. 简单的空闲空间填充 (可选，为了彻底擦除，这里仅做 trim)
+echo "[+] 执行磁盘 TRIM..."
+fstrim -av
+
+echo "======================================================="
+echo "   清理完成！"
+echo "   建议重启系统以释放所有进程占用：reboot"
+echo "======================================================="
